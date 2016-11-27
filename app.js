@@ -48,9 +48,12 @@ var server = http.createServer(app).listen(app.get('port'), function(){
   console.log('Express server listening on port ' + app.get('port'));
 });
 
+var consumerSocket;
+
 
 var io = require('socket.io')(server);
 var sockets = [];
+var livestreamData = [];
 io.on('connection', function (socket) {
 
 	sockets.push(socket);
@@ -68,11 +71,10 @@ io.on('connection', function (socket) {
 
 	socket.on('data', function(data)	{
 		console.log("Data received at server : "+data);
-        for (var i = 0; i < sockets.length; i++)	{
-			if(sockets[i] != socket)	{
-				sockets[i].emit('data', data)
-			}
+        if(consumerSocket == null){
+        	consumerSocket = socket;
 		}
+		livestreamData.push(data);
 	});
 
 	/*
@@ -84,3 +86,17 @@ io.on('connection', function (socket) {
 
 	socket.emit('clientChannel', new Date() + 'Connection established');
 });
+
+function transmitDataPeriodically() {
+    setInterval(
+        function () {
+            for (var i = 0; i < sockets.length; i++)	{
+                if(sockets[i] != consumerSocket && livestreamData.length > 0)	{
+                    sockets[i].emit('data', livestreamData.shift());
+                }
+            }
+
+        }, 1000);
+}
+
+transmitDataPeriodically();
