@@ -68,49 +68,13 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
     };
 
     $scope.getAggregationData = function () {
-        var chart;
-        $scope.temperatureArr = [];
-        $scope.humidityArray = [];
-        $scope.aqiMap =
-            {
-                co2: [],
-                co: [],
-                no: [],
-                o3:[]
-            };
-        $scope.windSpeedArray = [];
-        $scope.timeArray = [];
+
+        $scope.dataArr = [];
         socket.on('data', function(data) {
 
             if(isJson(data)){
                 var jsonObj = JSON.parse(data);
-                /*
-                 console.log("JSON : "+ jsonObj);
-
-                 console.log(jsonObj.time);
-                 console.log(jsonObj['time']);
-                 console.log(jsonObj['reading']);
-                 $scope.readingArr.push(jsonObj['reading']);
-                 */
-
-                console.log("Time : "+new Date(jsonObj['time']));
-                console.log("Seconds : "+new Date(jsonObj['time']).getTime());
-                console.log("Date : "+new Date(jsonObj['time']).getDate());
-                console.log("Day : "+new Date(jsonObj['time']).getDay());
-                console.log("Hours : "+new Date(jsonObj['time']).getHours());
-                console.log("Minutes : "+new Date(jsonObj['time']).getMinutes());
-                console.log("Seconds : "+new Date(jsonObj['time']).getSeconds());
-                $scope.timeArray.push(new Date(jsonObj['time']));
-                //console.log("Temperature : "+jsonObj['airTemperature']);
-                $scope.temperatureArr.push(jsonObj['airTemperature']);
-                //console.log("Humidity : " + jsonObj['precipitationAmount']);
-                $scope.humidityArray.push(jsonObj['precipitationAmount']);
-                //console.log("Humidity : " + jsonObj['carbonMonoOxide']);
-                $scope.aqiMap.co.push(jsonObj['carbonMonoOxide']);
-                //console.log("Humidity : " + jsonObj['carbonDiOxide']);
-                $scope.aqiMap.co2.push(jsonObj['carbonDiOxide']);
-                //console.log("Humidity : " + jsonObj['windSpeed']);
-                $scope.windSpeedArray.push(jsonObj['windSpeed']);
+                $scope.dataArr.push(jsonObj);
 
             } else {
                 console.log("String : "+ data);
@@ -118,8 +82,14 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
 
         });
 
+        Highcharts.setOptions({
+            global: {
+                useUTC: false
+            }
+        });
 
-        //TODO define charts
+
+        //TODO Add option for historical data
         $scope.charts = {
             tempChart: Highcharts.chart({
                 chart: {
@@ -129,6 +99,22 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
                         load: loadData
                     }
                 },
+                /*rangeSelector: {
+                 buttons: [{
+                 count: 1,
+                 type: 'hour',
+                 text: '1H'
+                 }, {
+                 count: 5,
+                 type: 'hour',
+                 text: '5H'
+                 }, {
+                 type: 'all',
+                 text: 'All'
+                 }],
+                 inputEnabled: false,
+                 selected: 0
+                 },*/
                 title: {
                     text: 'Live temperature data'
                 },
@@ -165,8 +151,8 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
 
                 series: [
                     {
-                    name: 'Carbon Monoxide',
-                    data: []
+                        name: 'Carbon Monoxide',
+                        data: []
                     },
                     {
                         name: 'Carbon Dioxide',
@@ -311,79 +297,63 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
             setInterval(function () {
 
                 var currentTime = new Date().getTime();
-                var shiftValue = 50;
-                if($scope.timeArray.length > 0){
-                    currentTime = $scope.timeArray.shift().getTime();
+                var shiftValue = 20;
+                if($scope.dataArr.length > 0){
+                    var currJson = $scope.dataArr.shift();
+                    currentTime = new Date(currJson['time']).getTime();
 
                     //Temperature chart
-                    var tempShift = $scope.charts.tempChart.series[0].data.length > shiftValue;
 
-                    $scope.charts.tempChart.series[0].addPoint([currentTime, $scope.temperatureArr.shift()],
-                        true, tempShift);
 
+                    try {
+                        var tempShift = $scope.charts.tempChart.series[0].data.length > shiftValue;
+
+                        $scope.charts.tempChart.series[0].addPoint([currentTime, parseFloat(currJson['airTemperature'])], true, tempShift);
+                        console.log("Current temperature "+parseFloat(currJson['airTemperature']));
+
+                    } catch (e){
+                        console.log("Error found"+ parseFloat(currJson['airTemperature'])+"\n current time "+ currentTime, e);
+                    }
 
                     //AQI chart
-                    var coShift = $scope.charts.aqiChart.series[0].data.length > shiftValue;
-                    $scope.charts.aqiChart.series[0].addPoint([currentTime, $scope.aqiMap.co.shift()],
-                        true, coShift);
+                    try {
+                        var coShift = $scope.charts.aqiChart.series[0].data.length > shiftValue;
+                        $scope.charts.aqiChart.series[0].addPoint([currentTime, parseFloat(currJson['carbonMonoOxide'])], true, coShift);
+                        console.log("Current carbonMonoOxide "+parseFloat(currJson['carbonMonoOxide']));
 
-                    var co2Shift = $scope.charts.aqiChart.series[1].data.length > shiftValue;
-                    $scope.charts.aqiChart.series[1].addPoint([currentTime, $scope.aqiMap.co2.shift()],
-                        true, co2Shift);
+                    } catch (e){
+                        console.log("Error found", e);
+                    }
 
+                    try{
+                        var co2Shift = $scope.charts.aqiChart.series[1].data.length > shiftValue;
+                        $scope.charts.aqiChart.series[1].addPoint([currentTime, parseFloat(currJson['carbonDiOxide'])], true, co2Shift);
+                        console.log("Current carbonDiOxide "+parseFloat(currJson['carbonDiOxide']));
+                    } catch (e){
+                        console.log("Error found", e);
+                    }
                     //Humidity chart
-                    var humidityShift = $scope.charts.humidityChart.series[0].data.length > shiftValue;
-                    $scope.charts.humidityChart.series[0].addPoint([currentTime, $scope.humidityArray.shift()],
-                        true, humidityShift);
+                    try {
+                        var humidityShift = $scope.charts.humidityChart.series[0].data.length > shiftValue;
+                        $scope.charts.humidityChart.series[0].addPoint([currentTime, parseFloat(currJson['precipitationAmount'])], true, humidityShift);
+                        console.log("Current precipitationAmount "+parseFloat(currJson['precipitationAmount']));
+                    } catch (e){
+                        console.log("Error found", e);
+                    }
 
                     //Wind speed gauge chart
-                    var point = $scope.charts.windDirectionChart.series[0].points[0];
-                    point.update($scope.windSpeedArray.shift());
-
-
+                    try {
+                        var point = $scope.charts.windDirectionChart.series[0].points[0];
+                        point.update(parseFloat(currJson['windSpeed']));
+                        console.log("Current windSpeed "+parseFloat(currJson['windSpeed']));
+                    } catch (e){
+                        console.log("Error found", e);
+                    }
                 }
 
 
             }, 1000);
         }
 
-        /*$scope.chart = Highcharts.chart({
-            chart: {
-                renderTo: 'graphDiv',
-                defaultSeriesType: 'spline',
-                events: {
-                    load: function () {
-
-                        var series = this.series[0];
-                        setInterval(function () {
-                            var shift = series.data.length > 20,
-                                point = 0,
-                                x = new Date().getTime();
-                            if (typeof $scope.readingArr !== 'undefined' && $scope.readingArr.length > 0) {
-                                // the array is defined and has at least one element
-                                point = $scope.readingArr.shift();
-                                console.log("New point is : "+point);
-                            }
-                            console.log("Adding point : "+point);
-                            series.addPoint([x, point], true, shift);
-                        },1000);
-                    }
-                }
-            },
-            title: {
-                text: 'Live data feed'
-            },
-
-            xAxis: {
-                type: 'datetime',
-                tickPixelInterval: 150,
-                maxZoom: 20 * 1000
-            },
-
-            series: [{
-                name: 'Time',
-                data: []
-            }]
-        });*/
     }
 });
