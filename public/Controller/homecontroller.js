@@ -70,7 +70,7 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
     $scope.getAggregationData = function () {
 
         $scope.dataArr = [];
-        socket.on('data', function(data) {
+        socket.on('aggregationData', function(data) {
 
             if(isJson(data)){
                 var jsonObj = JSON.parse(data);
@@ -87,7 +87,6 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
                 useUTC: false
             }
         });
-
 
         //TODO Add option for historical data
         $scope.charts = {
@@ -140,7 +139,7 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
                     }
                 },
                 title: {
-                    text: 'Live AQI data'
+                    text: 'Live Pollutants data'
                 },
 
                 xAxis: {
@@ -156,6 +155,14 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
                     },
                     {
                         name: 'Carbon Dioxide',
+                        data: []
+                    },
+                    {
+                        name: 'Nitrous Oxide',
+                        data: []
+                    },
+                    {
+                        name: 'Ozone',
                         data: []
                     }
                 ]
@@ -282,17 +289,6 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
             })
         };
 
-
-
-        function isJson(str) {
-            try {
-                JSON.parse(str);
-            } catch (e) {
-                return false;
-            }
-            return true;
-        }
-
         function loadData(){
             setInterval(function () {
 
@@ -300,26 +296,26 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
                 var shiftValue = 20;
                 if($scope.dataArr.length > 0){
                     var currJson = $scope.dataArr.shift();
-                    currentTime = new Date(currJson['time']).getTime();
-
+                    //currentTime = new Date(currJson.time).getTime();
+                    currentTime = new Date().getTime();
                     //Temperature chart
 
 
                     try {
                         var tempShift = $scope.charts.tempChart.series[0].data.length > shiftValue;
 
-                        $scope.charts.tempChart.series[0].addPoint([currentTime, parseFloat(currJson['airTemperature'])], true, tempShift);
-                        console.log("Current temperature "+parseFloat(currJson['airTemperature']));
+                        $scope.charts.tempChart.series[0].addPoint([currentTime, parseFloat(currJson.temperature)], true, tempShift);
+                        console.log("Current temperature "+parseFloat(currJson.temperature));
 
                     } catch (e){
-                        console.log("Error found"+ parseFloat(currJson['airTemperature'])+"\n current time "+ currentTime, e);
+                        console.log("Error found"+ parseFloat(currJson.temperature)+"\n current time "+ currentTime, e);
                     }
 
                     //AQI chart
                     try {
                         var coShift = $scope.charts.aqiChart.series[0].data.length > shiftValue;
-                        $scope.charts.aqiChart.series[0].addPoint([currentTime, parseFloat(currJson['carbonMonoOxide'])], true, coShift);
-                        console.log("Current carbonMonoOxide "+parseFloat(currJson['carbonMonoOxide']));
+                        $scope.charts.aqiChart.series[0].addPoint([currentTime, parseFloat(currJson.CO)], true, coShift);
+                        console.log("Current carbonMonoOxide "+parseFloat(currJson.CO));
 
                     } catch (e){
                         console.log("Error found", e);
@@ -327,16 +323,32 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
 
                     try{
                         var co2Shift = $scope.charts.aqiChart.series[1].data.length > shiftValue;
-                        $scope.charts.aqiChart.series[1].addPoint([currentTime, parseFloat(currJson['carbonDiOxide'])], true, co2Shift);
-                        console.log("Current carbonDiOxide "+parseFloat(currJson['carbonDiOxide']));
+                        $scope.charts.aqiChart.series[1].addPoint([currentTime, parseFloat(currJson.CO2)], true, co2Shift);
+                        console.log("Current carbonDiOxide "+parseFloat(currJson.CO2));
+                    } catch (e){
+                        console.log("Error found", e);
+                    }
+
+                    try{
+                        var noShift = $scope.charts.aqiChart.series[2].data.length > shiftValue;
+                        $scope.charts.aqiChart.series[2].addPoint([currentTime, parseFloat(currJson.NO)], true, noShift);
+                        console.log("Current Nitrous Oxide "+parseFloat(currJson.NO));
+                    } catch (e){
+                        console.log("Error found", e);
+                    }
+
+                    try{
+                        var o3Shift = $scope.charts.aqiChart.series[3].data.length > shiftValue;
+                        $scope.charts.aqiChart.series[3].addPoint([currentTime, parseFloat(currJson.O3)], true, o3Shift);
+                        console.log("Current Ozone "+parseFloat(currJson.O3));
                     } catch (e){
                         console.log("Error found", e);
                     }
                     //Humidity chart
                     try {
                         var humidityShift = $scope.charts.humidityChart.series[0].data.length > shiftValue;
-                        $scope.charts.humidityChart.series[0].addPoint([currentTime, parseFloat(currJson['precipitationAmount'])], true, humidityShift);
-                        console.log("Current precipitationAmount "+parseFloat(currJson['precipitationAmount']));
+                        $scope.charts.humidityChart.series[0].addPoint([currentTime, parseFloat(currJson.precipitation)], true, humidityShift);
+                        console.log("Current precipitationAmount "+parseFloat(currJson.precipitation));
                     } catch (e){
                         console.log("Error found", e);
                     }
@@ -344,8 +356,8 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
                     //Wind speed gauge chart
                     try {
                         var point = $scope.charts.windDirectionChart.series[0].points[0];
-                        point.update(parseFloat(currJson['windSpeed']));
-                        console.log("Current windSpeed "+parseFloat(currJson['windSpeed']));
+                        point.update(parseFloat(currJson.windSpeed));
+                        console.log("Current windSpeed "+parseFloat(currJson.windSpeed));
                     } catch (e){
                         console.log("Error found", e);
                     }
@@ -355,5 +367,162 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
             }, 1000);
         }
 
+    };
+
+    $scope.getAnomalyData = function () {
+
+        var map = null;
+        var icon = "http://maps.google.com/mapfiles/ms/icons/blue-dot.png (1KB)";
+
+        //markers array
+        $scope.markers = {};
+        $scope.markerHtml = {};
+
+        socket.on('anomalyData', function(data) {
+
+            if(isJson(data)){
+                var jsonObj = JSON.parse(data);
+                console.log("Data received on channel 'anomalyData'"+data);
+
+                //TODO Filter out the client's location instead of 'San Francisco'
+                if(jsonObj.data['city'] == 'San Fransisco'){
+
+                    var sensorId = jsonObj['sensorId'];
+                    if(!$scope.markers.hasOwnProperty(sensorId.toString())){
+                        //Create a new marker
+                        $scope.markers[sensorId.toString()] = {
+                            'latitude': jsonObj['data']['latitude'],
+                            'longitude': jsonObj['data']['longitude'],
+                            'markerObject': new google.maps.Marker(
+                                {
+                                    map: $scope.map,
+                                    position: new google.maps.LatLng(jsonObj['data']['latitude'], jsonObj['data']['longitude'])
+
+                                }
+                            ),
+                            'infoWindow': new google.maps.InfoWindow({
+                                content: "",
+                                maxWidth: 320
+                            }),
+                            'data': [],
+                            'htmlContent': ""
+                        };
+
+                        //Display this marker with its content on the map
+                        $scope.markers[sensorId.toString()].infoWindow.open($scope.map,
+                            $scope.markers[sensorId.toString()].markerObject);
+
+                    }
+
+                    $scope.markers[sensorId.toString()].data.push(jsonObj);
+                }
+
+            } else {
+                console.log("String : "+ data);
+            }
+
+        });
+
+        initMap();
+
+        function initMap() {
+            $scope.map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 14,
+                center: new google.maps.LatLng(0.0, 0.0)
+            });
+        }
+
+        var counter = 100;
+
+        function loadData(){
+            setInterval(function () {
+                //Iterate over the markers
+                for (var sensorId in $scope.markers) {
+                    if ($scope.markers.hasOwnProperty(sensorId) && $scope.markers[sensorId]['data'].length > 0) {
+                        var marker = $scope.markers[sensorId];
+                        //marker.infoWindow.setContent("<b>"+(counter++)+"</b>");
+                        //TODO update the marker's content with the data
+                        if(marker.data.length > 0){
+                            marker.infoWindow.setContent(generateHtmlContent(marker.data.shift()));
+                        }
+                    }
+                }
+
+            }, 1000);
+        }
+
+        loadData();
+
+        function generateHtmlContent(dataJson) {
+            var anomalyName = "";
+            var temperature, co2, co, no, o3, precipitation, windDirection, windSpeed, divHeader;
+            temperature = dataJson.data.temperature;
+            co2 = dataJson.data.CO2;
+            co = dataJson.data.CO;
+            no = dataJson.data.NO;
+            o3 = dataJson.data.O3;
+            precipitation = dataJson.data.precipitation;
+            windDirection = dataJson.data.windDirection;
+            windSpeed = dataJson.data.windSpeed;
+            divHeader = "<div>";
+            if(dataJson.detectedAnomaly != null){
+                divHeader = "<div style=\"color: red;\">";
+                anomalyName = "<b>"+dataJson.detectedAnomaly.toString().toUpperCase()+" ALERT!!</b>"
+                    +appendImageUrl(dataJson.detectedAnomaly);
+                if(anomalyName == "fire"){
+                    temperature = generateRedTextHtml(dataJson.data.temperature);
+                    co2 = generateRedTextHtml(dataJson.data.CO2);
+                    co = generateRedTextHtml(dataJson.data.CO);
+                    no = generateRedTextHtml(dataJson.data.NO);
+                    o3 = generateRedTextHtml(dataJson.data.O3);
+                } else if(anomalyName == "cyclone"){
+                    precipitation = generateRedTextHtml(dataJson.data.precipitation);
+                    windSpeed = generateRedTextHtml(dataJson.data.windSpeed);
+                    windDirection = generateRedTextHtml(dataJson.data.windDirection);
+                }
+            }
+            var htmlArr = [
+                divHeader,
+                "<i>Sensor Name: "+dataJson.sensorName+"</i>",
+                "<i>Sensor ID: "+dataJson.sensorId+"</i>",
+                anomalyName,
+                "Date & time: "+dataJson.timestamp,
+                "Temperature:"+temperature+" °C",
+                "Carbon Dioxide level:"+co2+" ppm",
+                "Carbon Monoxide level:"+co+" ppm",
+                "Nitric Oxide level:"+no+" ppm",
+                "Ozone level:"+o3+" ppm",
+                "Precipitation:"+precipitation+" mm",
+                "Wind direction:"+windDirection+" Degrees",
+                "Wind speed:"+windSpeed+" km/hr",
+                "</div>"
+            ];
+
+
+            return htmlArr.join("<br>");
+        }
+
+        function generateRedTextHtml(text) {
+            return "<p style=\"color:red\" >"+text+"</p>";
+        }
+
+        function appendImageUrl(anomalyType) {
+            if(anomalyType == "cyclone"){
+                return "<img src=\"http://emojipedia-us.s3.amazonaws.com/cache/d3/a8/d3a818e14ae276f8d987209997fadf0f.png\" width=\"25\" height=\"25\" >";
+            } else if(anomalyType == "fire")
+                return "<img src=\"http://emojipedia-us.s3.amazonaws.com/cache/31/21/3121d7c3bebb2fa09d66a3f72b41026a.png\" width=\"25\" height=\"25\" >";
+        }
+
+
+    };
+
+    function isJson(str) {
+        try {
+            JSON.parse(str);
+        } catch (e) {
+            return false;
+        }
+        return true;
     }
+
 });
