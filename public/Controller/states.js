@@ -1,4 +1,4 @@
-var app = angular.module('myApp',['ui.router']);
+var app = angular.module('myApp',['ui.router','ngStorage']);
 
 app.config(function($stateProvider, $urlRouterProvider) {
     

@@ -1,5 +1,17 @@
-homeapp.controller('homecontroller', function($scope, $http,socket) {
-    $scope.getdata=function(){
+homeapp.controller('homecontroller', function($scope, $http,socket,$localStorage) {
+
+
+    var locationValues = {
+        "dr5regw90t4b": "New York",
+        "9q8zn6ymbsr3": "San Fransisco" ,
+        "9tbd6f7rz05x": "Arizona City"
+    };
+    //TODO Set the client's location
+
+    var clientCity = locationValues[$localStorage.location];
+
+    /*
+   $scope.getdata=function(){
         var chart;
         $scope.readingArr = [];
         socket.on('data', function(data) {
@@ -65,17 +77,25 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
                 data: []
             }]
         });
-    };
+    };*/
 
     $scope.getAggregationData = function () {
 
-        $scope.dataArr = [];
+        $scope.secondlyDataArr = [];
+        $scope.minutelyDataArr = [];
+        $scope.hourlyDataArr = [];
         socket.on('aggregationData', function(data) {
+            console.log("Receveid data "+data+" for aggregation");
 
             if(isJson(data)){
                 var jsonObj = JSON.parse(data);
-                $scope.dataArr.push(jsonObj);
-
+                if(jsonObj.series == "secondly"){
+                    $scope.secondlyDataArr.push(jsonObj);
+                } else if(jsonObj.series == "minutely"){
+                    $scope.minutelyDataArr.push(jsonObj);
+                } else if(jsonObj.series == "hourly"){
+                    $scope.hourlyDataArr.push(jsonObj);
+                }
             } else {
                 console.log("String : "+ data);
             }
@@ -89,13 +109,13 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
         });
 
         //TODO Add option for historical data
-        $scope.charts = {
+        $scope.secondlyCharts = {
             tempChart: Highcharts.chart({
                 chart: {
-                    renderTo: 'tempChartDiv',
+                    renderTo: 'secondlyTempChartDiv',
                     defaultSeriesType: 'spline',
                     events: {
-                        load: loadData
+                        load: loadSecondlyData
                     }
                 },
                 /*rangeSelector: {
@@ -132,10 +152,10 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
 
             aqiChart: Highcharts.chart({
                 chart: {
-                    renderTo: 'aqiChartDiv',
+                    renderTo: 'secondlyAqiChartDiv',
                     defaultSeriesType: 'spline',
                     events: {
-                        load: loadData
+                        load: loadSecondlyData
                     }
                 },
                 title: {
@@ -167,12 +187,13 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
                     }
                 ]
             }),
+
             humidityChart: Highcharts.chart({
                 chart: {
-                    renderTo: 'humidityChartDiv',
+                    renderTo: 'secondlyHumidityChartDiv',
                     defaultSeriesType: 'spline',
                     events: {
-                        load: loadData
+                        load: loadSecondlyData
                     }
                 },
                 title: {
@@ -191,9 +212,7 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
                 }]
             }),
 
-
-
-            windDirectionChart: Highcharts.chart('windDirectionDiv', {
+            windDirectionChart: Highcharts.chart('secondlyWindDirectionDiv', {
 
                 chart: {
                     type: 'gauge',
@@ -289,22 +308,428 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
             })
         };
 
-        function loadData(){
+        //TODO Minutely charts
+
+        $scope.minutelyCharts = {
+            tempChart: Highcharts.chart({
+                chart: {
+                    renderTo: 'minutelyTempChartDiv',
+                    defaultSeriesType: 'spline',
+                    events: {
+                        load: loadMinutelyData
+                    }
+                },
+                /*rangeSelector: {
+                 buttons: [{
+                 count: 1,
+                 type: 'hour',
+                 text: '1H'
+                 }, {
+                 count: 5,
+                 type: 'hour',
+                 text: '5H'
+                 }, {
+                 type: 'all',
+                 text: 'All'
+                 }],
+                 inputEnabled: false,
+                 selected: 0
+                 },*/
+                title: {
+                    text: 'Live temperature data'
+                },
+
+                xAxis: {
+                    type: 'datetime',
+                    tickPixelInterval: 150,
+                    maxZoom: 20 * 1000
+                },
+
+                series: [{
+                    name: 'Temperature',
+                    data: []
+                }]
+            }),
+
+            aqiChart: Highcharts.chart({
+                chart: {
+                    renderTo: 'minutelyAqiChartDiv',
+                    defaultSeriesType: 'spline',
+                    events: {
+                        load: loadMinutelyData
+                    }
+                },
+                title: {
+                    text: 'Live Pollutants data'
+                },
+
+                xAxis: {
+                    type: 'datetime',
+                    tickPixelInterval: 150,
+                    maxZoom: 20 * 1000
+                },
+
+                series: [
+                    {
+                        name: 'Carbon Monoxide',
+                        data: []
+                    },
+                    {
+                        name: 'Carbon Dioxide',
+                        data: []
+                    },
+                    {
+                        name: 'Nitrous Oxide',
+                        data: []
+                    },
+                    {
+                        name: 'Ozone',
+                        data: []
+                    }
+                ]
+            }),
+
+            humidityChart: Highcharts.chart({
+                chart: {
+                    renderTo: 'minutelyHumidityChartDiv',
+                    defaultSeriesType: 'spline',
+                    events: {
+                        load: loadMinutelyData
+                    }
+                },
+                title: {
+                    text: 'Live humidity data'
+                },
+
+                xAxis: {
+                    type: 'datetime',
+                    tickPixelInterval: 150,
+                    maxZoom: 20 * 1000
+                },
+
+                series: [{
+                    name: 'Humidity',
+                    data: []
+                }]
+            }),
+
+            windDirectionChart: Highcharts.chart('minutelyWindDirectionDiv', {
+
+                chart: {
+                    type: 'gauge',
+                    plotBackgroundColor: null,
+                    plotBackgroundImage: null,
+                    plotBorderWidth: 0,
+                    plotShadow: false
+                },
+
+                title: {
+                    text: 'Wind Speedometer'
+                },
+
+                pane: {
+                    startAngle: -150,
+                    endAngle: 150,
+                    background: [{
+                        backgroundColor: {
+                            linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+                            stops: [
+                                [0, '#FFF'],
+                                [1, '#333']
+                            ]
+                        },
+                        borderWidth: 0,
+                        outerRadius: '109%'
+                    }, {
+                        backgroundColor: {
+                            linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+                            stops: [
+                                [0, '#333'],
+                                [1, '#FFF']
+                            ]
+                        },
+                        borderWidth: 1,
+                        outerRadius: '107%'
+                    }, {
+                        // default background
+                    }, {
+                        backgroundColor: '#DDD',
+                        borderWidth: 0,
+                        outerRadius: '105%',
+                        innerRadius: '103%'
+                    }]
+                },
+
+                // the value axis
+                yAxis: {
+                    min: 0,
+                    max: 10.0,
+
+                    minorTickInterval: 'auto',
+                    minorTickWidth: 1,
+                    minorTickLength: 10,
+                    minorTickPosition: 'inside',
+                    minorTickColor: '#666',
+
+                    tickPixelInterval: 30,
+                    tickWidth: 2,
+                    tickPosition: 'inside',
+                    tickLength: 10,
+                    tickColor: '#666',
+                    labels: {
+                        step: 2,
+                        rotation: 'auto'
+                    },
+                    title: {
+                        text: 'km/h'
+                    },
+                    plotBands: [{
+                        from: 0,
+                        to: 5,
+                        color: '#55BF3B' // green
+                    }, {
+                        from: 5,
+                        to: 8,
+                        color: '#DDDF0D' // yellow
+                    }, {
+                        from: 8,
+                        to: 10,
+                        color: '#DF5353' // red
+                    }]
+                },
+
+                series: [{
+                    name: 'Speed',
+                    data: [5],
+                    tooltip: {
+                        valueSuffix: ' km/h'
+                    }
+                }]
+
+            })
+        };
+
+        //Hourly charts
+
+        $scope.hourlyCharts = {
+            tempChart: Highcharts.chart({
+                chart: {
+                    renderTo: 'hourlyTempChartDiv',
+                    defaultSeriesType: 'spline',
+                    events: {
+                        load: loadHourlyData
+                    }
+                },
+                /*rangeSelector: {
+                 buttons: [{
+                 count: 1,
+                 type: 'hour',
+                 text: '1H'
+                 }, {
+                 count: 5,
+                 type: 'hour',
+                 text: '5H'
+                 }, {
+                 type: 'all',
+                 text: 'All'
+                 }],
+                 inputEnabled: false,
+                 selected: 0
+                 },*/
+                title: {
+                    text: 'Live temperature data'
+                },
+
+                xAxis: {
+                    type: 'datetime',
+                    tickPixelInterval: 150,
+                    maxZoom: 20 * 1000
+                },
+
+                series: [{
+                    name: 'Temperature',
+                    data: []
+                }]
+            }),
+
+            aqiChart: Highcharts.chart({
+                chart: {
+                    renderTo: 'hourlyAqiChartDiv',
+                    defaultSeriesType: 'spline',
+                    events: {
+                        load: loadHourlyData
+                    }
+                },
+                title: {
+                    text: 'Live Pollutants data'
+                },
+
+                xAxis: {
+                    type: 'datetime',
+                    tickPixelInterval: 150,
+                    maxZoom: 20 * 1000
+                },
+
+                series: [
+                    {
+                        name: 'Carbon Monoxide',
+                        data: []
+                    },
+                    {
+                        name: 'Carbon Dioxide',
+                        data: []
+                    },
+                    {
+                        name: 'Nitrous Oxide',
+                        data: []
+                    },
+                    {
+                        name: 'Ozone',
+                        data: []
+                    }
+                ]
+            }),
+
+            humidityChart: Highcharts.chart({
+                chart: {
+                    renderTo: 'hourlyHumidityChartDiv',
+                    defaultSeriesType: 'spline',
+                    events: {
+                        load: loadHourlyData
+                    }
+                },
+                title: {
+                    text: 'Live humidity data'
+                },
+
+                xAxis: {
+                    type: 'datetime',
+                    tickPixelInterval: 150,
+                    maxZoom: 20 * 1000
+                },
+
+                series: [{
+                    name: 'Humidity',
+                    data: []
+                }]
+            }),
+
+            windDirectionChart: Highcharts.chart('hourlyWindDirectionDiv', {
+
+                chart: {
+                    type: 'gauge',
+                    plotBackgroundColor: null,
+                    plotBackgroundImage: null,
+                    plotBorderWidth: 0,
+                    plotShadow: false
+                },
+
+                title: {
+                    text: 'Wind Speedometer'
+                },
+
+                pane: {
+                    startAngle: -150,
+                    endAngle: 150,
+                    background: [{
+                        backgroundColor: {
+                            linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+                            stops: [
+                                [0, '#FFF'],
+                                [1, '#333']
+                            ]
+                        },
+                        borderWidth: 0,
+                        outerRadius: '109%'
+                    }, {
+                        backgroundColor: {
+                            linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+                            stops: [
+                                [0, '#333'],
+                                [1, '#FFF']
+                            ]
+                        },
+                        borderWidth: 1,
+                        outerRadius: '107%'
+                    }, {
+                        // default background
+                    }, {
+                        backgroundColor: '#DDD',
+                        borderWidth: 0,
+                        outerRadius: '105%',
+                        innerRadius: '103%'
+                    }]
+                },
+
+                // the value axis
+                yAxis: {
+                    min: 0,
+                    max: 10.0,
+
+                    minorTickInterval: 'auto',
+                    minorTickWidth: 1,
+                    minorTickLength: 10,
+                    minorTickPosition: 'inside',
+                    minorTickColor: '#666',
+
+                    tickPixelInterval: 30,
+                    tickWidth: 2,
+                    tickPosition: 'inside',
+                    tickLength: 10,
+                    tickColor: '#666',
+                    labels: {
+                        step: 2,
+                        rotation: 'auto'
+                    },
+                    title: {
+                        text: 'km/h'
+                    },
+                    plotBands: [{
+                        from: 0,
+                        to: 5,
+                        color: '#55BF3B' // green
+                    }, {
+                        from: 5,
+                        to: 8,
+                        color: '#DDDF0D' // yellow
+                    }, {
+                        from: 8,
+                        to: 10,
+                        color: '#DF5353' // red
+                    }]
+                },
+
+                series: [{
+                    name: 'Speed',
+                    data: [5],
+                    tooltip: {
+                        valueSuffix: ' km/h'
+                    }
+                }]
+
+            })
+        };
+
+
+
+        function loadSecondlyData(){
             setInterval(function () {
 
                 var currentTime = new Date().getTime();
                 var shiftValue = 20;
-                if($scope.dataArr.length > 0){
-                    var currJson = $scope.dataArr.shift();
-                    //currentTime = new Date(currJson.time).getTime();
-                    currentTime = new Date().getTime();
+                var currJson;
+                //currentTime = new Date(currJson.time).getTime();
+
+                if($scope.secondlyDataArr.length > 0) {
+                    currJson = $scope.secondlyDataArr.shift().data;
+                    currentTime = new Date(currJson.timestamp).getTime();
+
                     //Temperature chart
 
-
                     try {
-                        var tempShift = $scope.charts.tempChart.series[0].data.length > shiftValue;
+                        var tempShift = $scope.secondlyCharts.tempChart.series[0].data.length > shiftValue;
 
-                        $scope.charts.tempChart.series[0].addPoint([currentTime, parseFloat(currJson.temperature)], true, tempShift);
+                        $scope.secondlyCharts.tempChart.series[0].addPoint([currentTime, parseFloat(currJson.temperature)], true, tempShift);
                         console.log("Current temperature "+parseFloat(currJson.temperature));
 
                     } catch (e){
@@ -313,8 +738,8 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
 
                     //AQI chart
                     try {
-                        var coShift = $scope.charts.aqiChart.series[0].data.length > shiftValue;
-                        $scope.charts.aqiChart.series[0].addPoint([currentTime, parseFloat(currJson.CO)], true, coShift);
+                        var coShift = $scope.secondlyCharts.aqiChart.series[0].data.length > shiftValue;
+                        $scope.secondlyCharts.aqiChart.series[0].addPoint([currentTime, parseFloat(currJson.CO)], true, coShift);
                         console.log("Current carbonMonoOxide "+parseFloat(currJson.CO));
 
                     } catch (e){
@@ -322,32 +747,32 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
                     }
 
                     try{
-                        var co2Shift = $scope.charts.aqiChart.series[1].data.length > shiftValue;
-                        $scope.charts.aqiChart.series[1].addPoint([currentTime, parseFloat(currJson.CO2)], true, co2Shift);
+                        var co2Shift = $scope.secondlyCharts.aqiChart.series[1].data.length > shiftValue;
+                        $scope.secondlyCharts.aqiChart.series[1].addPoint([currentTime, parseFloat(currJson.CO2)], true, co2Shift);
                         console.log("Current carbonDiOxide "+parseFloat(currJson.CO2));
                     } catch (e){
                         console.log("Error found", e);
                     }
 
                     try{
-                        var noShift = $scope.charts.aqiChart.series[2].data.length > shiftValue;
-                        $scope.charts.aqiChart.series[2].addPoint([currentTime, parseFloat(currJson.NO)], true, noShift);
+                        var noShift = $scope.secondlyCharts.aqiChart.series[2].data.length > shiftValue;
+                        $scope.secondlyCharts.aqiChart.series[2].addPoint([currentTime, parseFloat(currJson.NO)], true, noShift);
                         console.log("Current Nitrous Oxide "+parseFloat(currJson.NO));
                     } catch (e){
                         console.log("Error found", e);
                     }
 
                     try{
-                        var o3Shift = $scope.charts.aqiChart.series[3].data.length > shiftValue;
-                        $scope.charts.aqiChart.series[3].addPoint([currentTime, parseFloat(currJson.O3)], true, o3Shift);
+                        var o3Shift = $scope.secondlyCharts.aqiChart.series[3].data.length > shiftValue;
+                        $scope.secondlyCharts.aqiChart.series[3].addPoint([currentTime, parseFloat(currJson.O3)], true, o3Shift);
                         console.log("Current Ozone "+parseFloat(currJson.O3));
                     } catch (e){
                         console.log("Error found", e);
                     }
                     //Humidity chart
                     try {
-                        var humidityShift = $scope.charts.humidityChart.series[0].data.length > shiftValue;
-                        $scope.charts.humidityChart.series[0].addPoint([currentTime, parseFloat(currJson.precipitation)], true, humidityShift);
+                        var humidityShift = $scope.secondlyCharts.humidityChart.series[0].data.length > shiftValue;
+                        $scope.secondlyCharts.humidityChart.series[0].addPoint([currentTime, parseFloat(currJson.precipitation)], true, humidityShift);
                         console.log("Current precipitationAmount "+parseFloat(currJson.precipitation));
                     } catch (e){
                         console.log("Error found", e);
@@ -355,7 +780,161 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
 
                     //Wind speed gauge chart
                     try {
-                        var point = $scope.charts.windDirectionChart.series[0].points[0];
+                        var point = $scope.secondlyCharts.windDirectionChart.series[0].points[0];
+                        point.update(parseFloat(currJson.windSpeed));
+                        console.log("Current windSpeed "+parseFloat(currJson.windSpeed));
+                    } catch (e){
+                        console.log("Error found", e);
+                    }
+                }
+
+
+
+            }, 1000);
+        }
+
+        function loadMinutelyData(){
+            setInterval(function () {
+
+                var currentTime = new Date().getTime();
+                var shiftValue = 20;
+                if($scope.minutelyDataArr.length > 0){
+                    var currJson = $scope.minutelyDataArr.shift().data;
+
+                    currentTime = new Date(currJson.timestamp).getTime();
+                    //Temperature chart
+
+                    try {
+                        var tempShift = $scope.minutelyCharts.tempChart.series[0].data.length > shiftValue;
+
+                        $scope.minutelyCharts.tempChart.series[0].addPoint([currentTime, parseFloat(currJson.temperature)], true, tempShift);
+                        console.log("Current temperature "+parseFloat(currJson.temperature));
+
+                    } catch (e){
+                        console.log("Error found"+ parseFloat(currJson.temperature)+"\n current time "+ currentTime, e);
+                    }
+
+                    //AQI chart
+                    try {
+                        var coShift = $scope.minutelyCharts.aqiChart.series[0].data.length > shiftValue;
+                        $scope.minutelyCharts.aqiChart.series[0].addPoint([currentTime, parseFloat(currJson.CO)], true, coShift);
+                        console.log("Current carbonMonoOxide "+parseFloat(currJson.CO));
+
+                    } catch (e){
+                        console.log("Error found", e);
+                    }
+
+                    try{
+                        var co2Shift = $scope.minutelyCharts.aqiChart.series[1].data.length > shiftValue;
+                        $scope.minutelyCharts.aqiChart.series[1].addPoint([currentTime, parseFloat(currJson.CO2)], true, co2Shift);
+                        console.log("Current carbonDiOxide "+parseFloat(currJson.CO2));
+                    } catch (e){
+                        console.log("Error found", e);
+                    }
+
+                    try{
+                        var noShift = $scope.minutelyCharts.aqiChart.series[2].data.length > shiftValue;
+                        $scope.minutelyCharts.aqiChart.series[2].addPoint([currentTime, parseFloat(currJson.NO)], true, noShift);
+                        console.log("Current Nitrous Oxide "+parseFloat(currJson.NO));
+                    } catch (e){
+                        console.log("Error found", e);
+                    }
+
+                    try{
+                        var o3Shift = $scope.minutelyCharts.aqiChart.series[3].data.length > shiftValue;
+                        $scope.minutelyCharts.aqiChart.series[3].addPoint([currentTime, parseFloat(currJson.O3)], true, o3Shift);
+                        console.log("Current Ozone "+parseFloat(currJson.O3));
+                    } catch (e){
+                        console.log("Error found", e);
+                    }
+                    //Humidity chart
+                    try {
+                        var humidityShift = $scope.minutelyCharts.humidityChart.series[0].data.length > shiftValue;
+                        $scope.minutelyCharts.humidityChart.series[0].addPoint([currentTime, parseFloat(currJson.precipitation)], true, humidityShift);
+                        console.log("Current precipitationAmount "+parseFloat(currJson.precipitation));
+                    } catch (e){
+                        console.log("Error found", e);
+                    }
+
+                    //Wind speed gauge chart
+                    try {
+                        var point = $scope.minutelyCharts.windDirectionChart.series[0].points[0];
+                        point.update(parseFloat(currJson.windSpeed));
+                        console.log("Current windSpeed "+parseFloat(currJson.windSpeed));
+                    } catch (e){
+                        console.log("Error found", e);
+                    }
+                }
+
+
+            }, 1000);
+        }
+
+        function loadHourlyData(){
+            setInterval(function () {
+
+                var currentTime = new Date().getTime();
+                var shiftValue = 20;
+                if($scope.hourlyDataArr.length > 0){
+                    var currJson = $scope.hourlyDataArr.shift().data;
+                    currentTime = new Date(currJson.timestamp).getTime();
+                    //Temperature chart
+
+                    try {
+                        var tempShift = $scope.hourlyCharts.tempChart.series[0].data.length > shiftValue;
+
+                        $scope.hourlyCharts.tempChart.series[0].addPoint([currentTime, parseFloat(currJson.temperature)], true, tempShift);
+                        console.log("Current temperature "+parseFloat(currJson.temperature));
+
+                    } catch (e){
+                        console.log("Error found"+ parseFloat(currJson.temperature)+"\n current time "+ currentTime, e);
+                    }
+
+                    //AQI chart
+                    try {
+                        var coShift = $scope.hourlyCharts.aqiChart.series[0].data.length > shiftValue;
+                        $scope.hourlyCharts.aqiChart.series[0].addPoint([currentTime, parseFloat(currJson.CO)], true, coShift);
+                        console.log("Current carbonMonoOxide "+parseFloat(currJson.CO));
+
+                    } catch (e){
+                        console.log("Error found", e);
+                    }
+
+                    try{
+                        var co2Shift = $scope.hourlyCharts.aqiChart.series[1].data.length > shiftValue;
+                        $scope.hourlyCharts.aqiChart.series[1].addPoint([currentTime, parseFloat(currJson.CO2)], true, co2Shift);
+                        console.log("Current carbonDiOxide "+parseFloat(currJson.CO2));
+                    } catch (e){
+                        console.log("Error found", e);
+                    }
+
+                    try{
+                        var noShift = $scope.hourlyCharts.aqiChart.series[2].data.length > shiftValue;
+                        $scope.hourlyCharts.aqiChart.series[2].addPoint([currentTime, parseFloat(currJson.NO)], true, noShift);
+                        console.log("Current Nitrous Oxide "+parseFloat(currJson.NO));
+                    } catch (e){
+                        console.log("Error found", e);
+                    }
+
+                    try{
+                        var o3Shift = $scope.hourlyCharts.aqiChart.series[3].data.length > shiftValue;
+                        $scope.hourlyCharts.aqiChart.series[3].addPoint([currentTime, parseFloat(currJson.O3)], true, o3Shift);
+                        console.log("Current Ozone "+parseFloat(currJson.O3));
+                    } catch (e){
+                        console.log("Error found", e);
+                    }
+                    //Humidity chart
+                    try {
+                        var humidityShift = $scope.hourlyCharts.humidityChart.series[0].data.length > shiftValue;
+                        $scope.hourlyCharts.humidityChart.series[0].addPoint([currentTime, parseFloat(currJson.precipitation)], true, humidityShift);
+                        console.log("Current precipitationAmount "+parseFloat(currJson.precipitation));
+                    } catch (e){
+                        console.log("Error found", e);
+                    }
+
+                    //Wind speed gauge chart
+                    try {
+                        var point = $scope.hourlyCharts.windDirectionChart.series[0].points[0];
                         point.update(parseFloat(currJson.windSpeed));
                         console.log("Current windSpeed "+parseFloat(currJson.windSpeed));
                     } catch (e){
@@ -378,6 +957,7 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
         $scope.markers = {};
         $scope.markerHtml = {};
 
+
         socket.on('anomalyData', function(data) {
 
             if(isJson(data)){
@@ -385,7 +965,7 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
                 console.log("Data received on channel 'anomalyData'"+data);
 
                 //TODO Filter out the client's location instead of 'San Francisco'
-                if(jsonObj.data['city'] == 'San Fransisco'){
+                if(jsonObj.data['city'] == clientCity){
 
                     var sensorId = jsonObj['sensorId'];
                     if(!$scope.markers.hasOwnProperty(sensorId.toString())){
@@ -441,7 +1021,6 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
                     if ($scope.markers.hasOwnProperty(sensorId) && $scope.markers[sensorId]['data'].length > 0) {
                         var marker = $scope.markers[sensorId];
                         //marker.infoWindow.setContent("<b>"+(counter++)+"</b>");
-                        //TODO update the marker's content with the data
                         if(marker.data.length > 0){
                             marker.infoWindow.setContent(generateHtmlContent(marker.data.shift()));
                         }
@@ -514,7 +1093,9 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
         }
 
 
+
     };
+
 
     function isJson(str) {
         try {
@@ -524,5 +1105,25 @@ homeapp.controller('homecontroller', function($scope, $http,socket) {
         }
         return true;
     }
+
+
+    //logout
+    $scope.logout=function(){
+        console.log("hello in logout");
+        $http.get('/logout'
+        )
+            .success(function(data) {
+                // clear the form so our user is ready to enter another
+//          $scope.todos = data;
+                console.log(data);
+                if(data==="success")
+                    window.location.assign('/');
+                else
+                    console.log("got another ");
+            })
+            .error(function(data) {
+                console.log('Error: ' + data);
+            });
+    };
 
 });

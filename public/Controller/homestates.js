@@ -1,4 +1,4 @@
-var homeapp = angular.module('homeApp',['ui.router']);
+var homeapp = angular.module('homeApp',['ui.router','ngStorage']);
 
 homeapp.config(function($stateProvider, $urlRouterProvider) {
     

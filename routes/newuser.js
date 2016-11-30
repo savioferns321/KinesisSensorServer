@@ -1,4 +1,5 @@
 var mysql = require('mysql');
+var geoHash = require('geo-hash');
 exports.login = function(req, res){
 console.log("hello");
 console.log(req.body.username);
@@ -18,8 +19,27 @@ console.log(sql);
 con.query(sql, function(err, rows, fields) {
   if (!err){
     console.log('The solution is: ', rows);
-  if(rows.length>0){
-    res.send("success");
+  if(rows.length>0) {
+      console.log(rows[0].location);
+      //var location=geoHash.decode(rows[0].location);
+      var location = rows[0].location;
+      var sql1 = "update user set status=? where firstname=?";
+      var variables = ['online', req.body.username];
+      sql = mysql.format(sql1, variables);
+      console.log(sql);
+      con.query(sql, function (err, rows, fields) {
+          console.log("hello");
+          console.log(err);
+          if (!err) {
+              console.log('success');
+              req.session.username = req.body.username;
+              console.log(req.session.username);
+              res.send(location);
+          }
+          else {
+              res.send("error updating status");
+          }
+      })
   }
   else{
 	  res.send("not found");
@@ -29,6 +49,7 @@ con.query(sql, function(err, rows, fields) {
     console.log('Error while performing Query.');
    res.send("error"); 
   }
+    con.end();
 });
-con.end();
+
 };

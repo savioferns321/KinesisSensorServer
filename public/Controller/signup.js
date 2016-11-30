@@ -1,5 +1,5 @@
 
-app.controller('signup', function($scope, $http) {
+app.controller('signup', function($scope, $http,$localStorage) {
 	$scope.login = function () {
 		console.log("hello");
 		
@@ -11,10 +11,12 @@ app.controller('signup', function($scope, $http) {
             $scope.formData = {}; // clear the form so our user is ready to enter another
 //            $scope.todos = data;
            console.log(data);
-            if(data==="success")
-            window.location.assign('/homepage');
+            if(data==="not found")
+                $scope.todos=data;
             else
-            	$scope.todos=data;
+            window.location.assign('/homepage');
+            	console.log(data);
+            	$localStorage.location=data;
         })
         .error(function(data) {
             console.log('Error: ' + data);

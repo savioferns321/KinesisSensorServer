@@ -42,7 +42,7 @@ app.get('/users', user.list);
 app.post('/login',newuser.login);
 app.get('/homepage',login.home);
 app.post('/signup',user.signup);
-
+app.get('/logout',user.logout);
 
 var server = http.createServer(app).listen(app.get('port'), function(){
     console.log('Express server listening on port ' + app.get('port'));
@@ -58,15 +58,17 @@ var anomalyData = [];
 io.on('connection', function (socket) {
 
     sockets.push(socket);
+    console.log("Client connected : "+socket)
 
     socket.on('data', function(data)	{
         console.log("Data received at server : "+data);
         if(consumerSocket == null){
+            console.log("Setting the consumer socket"+socket);
             consumerSocket = socket;
         }
         if(isJson(data)){
             var jsonObj = JSON.parse(data);
-            if(jsonObj.hasOwnProperty('detectedAnomaly')){
+            if(jsonObj.detectedAnomaly != "noanamoly"){
                 anomalyData.push(data);
             } else {
                 aggregationData.push(data);
@@ -88,6 +90,7 @@ function transmitDataPeriodically() {
                         currentData = aggregationData.shift();
                         if(isJson(currentData)){
                             jsonObj = JSON.parse(currentData);
+                            console.log("Sending data"+JSON.stringify(currentData)+" to aggregation");
                             sockets[i].emit('aggregationData', currentData);
                         }
                     }

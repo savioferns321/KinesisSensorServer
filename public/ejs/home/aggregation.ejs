@@ -17,6 +17,8 @@
     a:active {
         background-color: yellow;
     }
+
+
 </style>
 
 <div class="navbar navbar-inverse navbar-fixed-left">
@@ -25,21 +27,70 @@
 
 </div>
 <div class="container">
+
     <div class="row" ng-controller="homecontroller">
         <form ng-init="getAggregationData()" >
-            <div id="tempChartDiv">
+
+            <h2>Aggregation data</h2>
+            <div class="col-md-12">
+            <ul class="nav nav-tabs">
+                <li><a data-toggle="tab" data-target="#menu1">Secondly</a></li>
+                <li><a data-toggle="tab" data-target="#menu2">Minutely</a></li>
+                <li><a data-toggle="tab" data-target="#menu3">Hourly</a></li>
+            </ul>
+
+            <div class="tab-content">
+
+                <div id="menu1" class="tab-pane fade">
+                    <div id="secondlyTempChartDiv">
+
+                    </div>
+                    <div id="secondlyAqiChartDiv">
+
+                    </div>
+                    <div id="secondlyHumidityChartDiv">
+
+                    </div>
+                    <div id="secondlyWindDirectionDiv">
+
+                    </div>
+                </div>
+                <div id="menu2" class="tab-pane fade">
+                    <div id="minutelyTempChartDiv">
+
+                    </div>
+                    <div id="minutelyAqiChartDiv">
+
+                    </div>
+                    <div id="minutelyHumidityChartDiv">
+
+                    </div>
+                    <div id="minutelyWindDirectionDiv">
+
+                    </div>
+
+                </div>
+                <div id="menu3" class="tab-pane fade">
+                    <div id="hourlyTempChartDiv">
+
+                    </div>
+                    <div id="hourlyAqiChartDiv">
+
+                    </div>
+                    <div id="hourlyHumidityChartDiv">
+
+                    </div>
+                    <div id="hourlyWindDirectionDiv">
+
+                    </div>
+
+                </div>
+            </div>
 
             </div>
-            <div id="aqiChartDiv">
-
-            </div>
-            <div id="humidityChartDiv">
-
-            </div>
-            <div id="windDirectionDiv">
-
-            </div>
-
         </form>
     </div>
+
+
+
 </div>

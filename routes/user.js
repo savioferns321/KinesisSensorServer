@@ -18,7 +18,8 @@ exports.signup=function(req,res){
     var locationId;
     var Newyork={"latitude": 40.712784,"longitude":-74.005941},
         SanFransisco={"latitude":37.809085,"longitude":-122.41204},
-        Arizona={"latitude":32.901836,"longitude":-111.742252}
+        Arizona={"latitude":32.752949,"longitude":-111.671257};
+
     if(req.body.location=="Newyork"){
         locationId = geoHash.encode(Newyork.latitude, Newyork.longitude);
     }
@@ -46,4 +47,33 @@ exports.signup=function(req,res){
         }
     });
     con.end();
+};
+
+exports.logout=function(req,res){
+
+    var con = mysql.createConnection({
+        host     : 'mysql2.cf0nl4bnjdro.us-west-2.rds.amazonaws.com',
+        user     : 'root',
+        password : 'sreekar26',
+        port     : '3306',
+        database : 'cmpe281'
+    });
+    con.connect();
+    var user=req.session.user;
+    var sql="update user set status=? where firstname=?";
+    var variables=['offline',req.session.username];
+    sql=mysql.format(sql,variables);
+    console.log(sql);
+    con.query(sql,function(err,rows,fields){
+        console.log("hello");
+        if(!err){
+            console.log('success');
+            req.session.destroy();
+            res.send("success");
+        }
+        else{
+            res.send("error updating status");
+        }
+
+    });
 };
