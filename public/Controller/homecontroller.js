@@ -790,7 +790,7 @@ homeapp.controller('homecontroller', function($scope, $http,socket,$localStorage
 
 
 
-            }, 1000);
+            }, 10);
         }
 
         function loadMinutelyData(){
@@ -867,7 +867,7 @@ homeapp.controller('homecontroller', function($scope, $http,socket,$localStorage
                 }
 
 
-            }, 1000);
+            }, 10);
         }
 
         function loadHourlyData(){
@@ -943,7 +943,7 @@ homeapp.controller('homecontroller', function($scope, $http,socket,$localStorage
                 }
 
 
-            }, 1000);
+            }, 10);
         }
 
     };
@@ -1027,7 +1027,7 @@ homeapp.controller('homecontroller', function($scope, $http,socket,$localStorage
                     }
                 }
 
-            }, 1000);
+            }, 10);
         }
 
         loadData();

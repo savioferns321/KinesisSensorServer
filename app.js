@@ -90,7 +90,7 @@ function transmitDataPeriodically() {
                         currentData = aggregationData.shift();
                         if(isJson(currentData)){
                             jsonObj = JSON.parse(currentData);
-                            console.log("Sending data"+JSON.stringify(currentData)+" to aggregation");
+                            console.log("Sending data"+currentData+" to aggregation");
                             sockets[i].emit('aggregationData', currentData);
                         }
                     }
@@ -107,7 +107,7 @@ function transmitDataPeriodically() {
 
             }
 
-        }, 1000);
+        }, 10);
 }
 
 transmitDataPeriodically();
