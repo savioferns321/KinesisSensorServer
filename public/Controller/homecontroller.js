@@ -184,7 +184,7 @@ homeapp.controller('homecontroller', function($scope, $http,socket,$localStorage
                 // the value axis
                 yAxis: {
                     min: 0,
-                    max: 10.0,
+                    max: 100.0,
 
                     minorTickInterval: 'auto',
                     minorTickWidth: 1,
@@ -206,24 +206,24 @@ homeapp.controller('homecontroller', function($scope, $http,socket,$localStorage
                     },
                     plotBands: [{
                         from: 0,
-                        to: 5,
+                        to: 50,
                         color: '#55BF3B' // green
                     }, {
-                        from: 5,
-                        to: 8,
+                        from: 50,
+                        to: 69,
                         color: '#DDDF0D' // yellow
                     }, {
-                        from: 8,
-                        to: 10,
+                        from: 69,
+                        to: 100,
                         color: '#DF5353' // red
                     }]
                 },
 
                 series: [{
                     name: 'Speed',
-                    data: [5],
+                    data: [50],
                     tooltip: {
-                        valueSuffix: ' km/h'
+                        valueSuffix: ' m/h'
                     }
                 }]
 
