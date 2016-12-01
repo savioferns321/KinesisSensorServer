@@ -58,20 +58,25 @@ var anomalyData = [];
 io.on('connection', function (socket) {
 
     sockets.push(socket);
-    console.log("Client connected : "+socket)
+    console.log("Client connected : "+socket);
 
     socket.on('data', function(data)	{
-        console.log("Data received at server : "+data);
+        //console.log("Data received at server : "+data);
+
         if(consumerSocket == null){
             console.log("Setting the consumer socket"+socket);
             consumerSocket = socket;
         }
-        if(isJson(data)){
-            var jsonObj = JSON.parse(data);
-            if(jsonObj.detectedAnomaly != "noanamoly"){
-                anomalyData.push(data);
+
+        var record = isJson(data);
+        //console.log("Current record: "+record);
+        if(record != null){
+            if(record.detectedAnomaly == "noanamoly"){
+                //anomalyData.push(data);
+                transmitData(record, false);
             } else {
-                aggregationData.push(data);
+//                aggregationData.push(data);
+                transmitData(record, true);
             }
         }
 
@@ -80,43 +85,28 @@ io.on('connection', function (socket) {
     socket.emit('clientChannel', new Date() + 'Connection established');
 });
 
-function transmitDataPeriodically() {
-    setInterval(
-        function () {
-            var currentData, jsonObj;
-            for (var i = 0; i < sockets.length; i++) {
-                if(sockets[i] != consumerSocket){
-                    if(aggregationData.length > 0)	{
-                        currentData = aggregationData.shift();
-                        if(isJson(currentData)){
-                            jsonObj = JSON.parse(currentData);
-                            console.log("Sending data"+currentData+" to aggregation");
-                            sockets[i].emit('aggregationData', currentData);
-                        }
-                    }
+function transmitData(currentData, isAnamoly) {
 
-                    if(anomalyData.length > 0)	{
-                        currentData = anomalyData.shift();
-                        if(isJson(currentData)){
-                            jsonObj = JSON.parse(currentData);
-                            sockets[i].emit('anomalyData', currentData);
-                        }
-                    }
-                }
+    for (var i = 0; i < sockets.length && consumerSocket != null; i++) {
+        if(sockets[i] != consumerSocket){
 
-
+            if(!isAnamoly){
+                //console.log("Sending aggregation data"+currentData);
+                sockets[i].emit('aggregationData', currentData);
             }
 
-        }, 10);
+            if(isAnamoly){
+                //console.log("Sending anamoly data"+currentData);
+                sockets[i].emit('anomalyData', currentData);
+            }
+        }
+    }
 }
-
-transmitDataPeriodically();
 
 function isJson(str) {
     try {
-        JSON.parse(str);
+        return JSON.parse(str);
     } catch (e) {
-        return false;
+        return null;
     }
-    return true;
 }

@@ -26,13 +26,12 @@
     <a class="navbar-brand" ui-sref="anamoly">Anomaly</a>
 
 </div>
-<div class="container">
+<div class="container" style="padding-left: 0px">
 
-    <div class="row" ng-controller="homecontroller">
+    <div ng-controller="homecontroller">
         <form ng-init="getAggregationData()" >
 
             <h2>Aggregation data</h2>
-            <div class="col-md-12">
             <ul class="nav nav-tabs">
                 <li><a data-toggle="tab" data-target="#menu1">Secondly</a></li>
                 <li><a data-toggle="tab" data-target="#menu2">Minutely</a></li>
@@ -42,13 +41,13 @@
             <div class="tab-content">
 
                 <div id="menu1" class="tab-pane fade">
-                    <div id="secondlyTempChartDiv">
+                    <div id="secondlyTempChartDiv" style="width: 75%">
 
                     </div>
-                    <div id="secondlyAqiChartDiv">
+                    <div id="secondlyAqiChartDiv" style="width: 75%">
 
                     </div>
-                    <div id="secondlyHumidityChartDiv">
+                    <div id="secondlyHumidityChartDiv" style="width: 75%">
 
                     </div>
                     <div id="secondlyWindDirectionDiv">
@@ -56,28 +55,28 @@
                     </div>
                 </div>
                 <div id="menu2" class="tab-pane fade">
-                    <div id="minutelyTempChartDiv">
+                    <div id="minutelyTempChartDiv" style="width: 75%">
 
                     </div>
-                    <div id="minutelyAqiChartDiv">
+                    <div id="minutelyAqiChartDiv" style="width: 75%">
 
                     </div>
-                    <div id="minutelyHumidityChartDiv">
+                    <div id="minutelyHumidityChartDiv" style="width: 75%">
 
                     </div>
-                    <div id="minutelyWindDirectionDiv">
+                    <div id="minutelyWindDirectionDiv" >
 
                     </div>
 
                 </div>
                 <div id="menu3" class="tab-pane fade">
-                    <div id="hourlyTempChartDiv">
+                    <div id="hourlyTempChartDiv" style="width: 75%">
 
                     </div>
-                    <div id="hourlyAqiChartDiv">
+                    <div id="hourlyAqiChartDiv" style="width: 75%">
 
                     </div>
-                    <div id="hourlyHumidityChartDiv">
+                    <div id="hourlyHumidityChartDiv" style="width: 75%">
 
                     </div>
                     <div id="hourlyWindDirectionDiv">
@@ -87,7 +86,7 @@
                 </div>
             </div>
 
-            </div>
+
         </form>
     </div>
 
