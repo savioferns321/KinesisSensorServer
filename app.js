@@ -87,16 +87,22 @@ io.on('connection', function (socket) {
 
 function transmitData(currentData, isAnamoly) {
 
+    if(!isAnamoly){
+        console.log("Sending aggregation data: " + currentData.data.timestamp + " series: " + currentData.series);
+    }
+
+    if(isAnamoly){
+        console.log("Sending anamoly data: " + currentData.data.timestamp + " city: " + currentData.data.city);
+    }
+
     for (var i = 0; i < sockets.length && consumerSocket != null; i++) {
         if(sockets[i] != consumerSocket){
 
             if(!isAnamoly){
-                //console.log("Sending aggregation data"+currentData);
                 sockets[i].emit('aggregationData', currentData);
             }
 
             if(isAnamoly){
-                //console.log("Sending anamoly data"+currentData);
                 sockets[i].emit('anomalyData', currentData);
             }
         }

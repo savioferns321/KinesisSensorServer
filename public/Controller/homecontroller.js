@@ -9,22 +9,36 @@ homeapp.controller('homecontroller', function($scope, $http,socket,$localStorage
 
     var clientCity = locationValues[$localStorage.location];
 
+    $scope.anamolyData = [];
+    $scope.anamolyInterval = null;
+    $scope.aggregationInterval = null;
+
+    $scope.secondlyDataArr = [];
+    $scope.minutelyDataArr = [];
+    $scope.hourlyDataArr = [];
+
+    socket.on('aggregationData', function(data) {
+        console.log(data.data.timestamp+" -- "+data.series);
+
+        var jsonObj = data;
+        if(jsonObj.series == "secondly"){
+            $scope.secondlyDataArr.push(jsonObj);
+        } else if(jsonObj.series == "minutely"){
+            $scope.minutelyDataArr.push(jsonObj);
+        } else if(jsonObj.series == "hourly"){
+            $scope.hourlyDataArr.push(jsonObj);
+        }
+    });
+
+    socket.on('anomalyData', function(data) {
+        console.log("anomalyData socket data "+JSON.stringify(data));
+        $scope.anamolyData.push(data);
+    });
+
     $scope.getAggregationData = function () {
 
-        $scope.secondlyDataArr = [];
-        $scope.minutelyDataArr = [];
-        $scope.hourlyDataArr = [];
-        socket.on('aggregationData', function(data) {
-
-            var jsonObj = data;
-            if(jsonObj.series == "secondly"){
-                $scope.secondlyDataArr.push(jsonObj);
-            } else if(jsonObj.series == "minutely"){
-                $scope.minutelyDataArr.push(jsonObj);
-            } else if(jsonObj.series == "hourly"){
-                $scope.hourlyDataArr.push(jsonObj);
-            }
-        });
+        if($scope.anamolyInterval != null)
+        clearInterval($scope.anamolyInterval);
 
         Highcharts.setOptions({
             global: {
@@ -42,22 +56,6 @@ homeapp.controller('homecontroller', function($scope, $http,socket,$localStorage
                         load: loadSecondlyData
                     }
                 },
-                /*rangeSelector: {
-                 buttons: [{
-                 count: 1,
-                 type: 'hour',
-                 text: '1H'
-                 }, {
-                 count: 5,
-                 type: 'hour',
-                 text: '5H'
-                 }, {
-                 type: 'all',
-                 text: 'All'
-                 }],
-                 inputEnabled: false,
-                 selected: 0
-                 },*/
                 title: {
                     text: 'Live temperature data'
                 },
@@ -241,22 +239,6 @@ homeapp.controller('homecontroller', function($scope, $http,socket,$localStorage
                         load: loadMinutelyData
                     }
                 },
-                /*rangeSelector: {
-                 buttons: [{
-                 count: 1,
-                 type: 'hour',
-                 text: '1H'
-                 }, {
-                 count: 5,
-                 type: 'hour',
-                 text: '5H'
-                 }, {
-                 type: 'all',
-                 text: 'All'
-                 }],
-                 inputEnabled: false,
-                 selected: 0
-                 },*/
                 title: {
                     text: 'Live temperature data'
                 },
@@ -442,22 +424,6 @@ homeapp.controller('homecontroller', function($scope, $http,socket,$localStorage
                         load: loadHourlyData
                     }
                 },
-                /*rangeSelector: {
-                 buttons: [{
-                 count: 1,
-                 type: 'hour',
-                 text: '1H'
-                 }, {
-                 count: 5,
-                 type: 'hour',
-                 text: '5H'
-                 }, {
-                 type: 'all',
-                 text: 'All'
-                 }],
-                 inputEnabled: false,
-                 selected: 0
-                 },*/
                 title: {
                     text: 'Live temperature data'
                 },
@@ -629,15 +595,8 @@ homeapp.controller('homecontroller', function($scope, $http,socket,$localStorage
                     }
                 }]
 
-            })
+    })
         };
-
-        setInterval(function () {
-            loadSecondlyData();
-            loadMinutelyData();
-            loadHourlyData()
-        },1000);
-
 
         function loadSecondlyData(){
 
@@ -646,7 +605,7 @@ homeapp.controller('homecontroller', function($scope, $http,socket,$localStorage
             var currJson;
             if($scope.secondlyDataArr.length > 0) {
                 currJson = $scope.secondlyDataArr.shift().data;
-                currentTime = new Date().getTime();
+                currentTime = new Date(currJson.timestamp).getTime();
 
                 //Temperature chart
 
@@ -858,64 +817,24 @@ homeapp.controller('homecontroller', function($scope, $http,socket,$localStorage
 
         }
 
+        $scope.aggregationInterval = setInterval(function(){
+            //console.log("**Loading aggregation data**");
+            loadSecondlyData();
+            loadMinutelyData();
+            loadHourlyData();
+        }, 10);
     };
 
     $scope.getAnomalyData = function () {
 
-        var map = null;
-        var icon = "http://maps.google.com/mapfiles/ms/icons/blue-dot.png (1KB)";
+        clearInterval($scope.aggregationInterval);
 
         //markers array
         $scope.markers = {};
         $scope.markerHtml = {};
 
+        var icon = "http://maps.google.com/mapfiles/ms/icons/blue-dot.png (1KB)";
 
-        socket.on('anomalyData', function(data) {
-            data = JSON.stringify(data);
-
-            if(isJson(data)){
-                var jsonObj = JSON.parse(data);
-
-
-                //TODO Filter out the client's location instead of 'San Francisco'
-                if(jsonObj.data['city'] == clientCity){
-                    console.log("Data received on channel 'anomalyData'"+jsonObj.data.timestamp);
-
-                    var sensorId = jsonObj['sensorId'];
-                    if(!$scope.markers.hasOwnProperty(sensorId.toString())){
-                        //Create a new marker
-                        $scope.markers[sensorId.toString()] = {
-                            'latitude': jsonObj['data']['latitude'],
-                            'longitude': jsonObj['data']['longitude'],
-                            'markerObject': new google.maps.Marker(
-                                {
-                                    map: $scope.map,
-                                    position: new google.maps.LatLng(jsonObj['data']['latitude'], jsonObj['data']['longitude'])
-
-                                }
-                            ),
-                            'infoWindow': new google.maps.InfoWindow({
-                                content: "",
-                                maxWidth: 320
-                            }),
-                            'data': [],
-                            'htmlContent': ""
-                        };
-
-                        //Display this marker with its content on the map
-                        $scope.markers[sensorId.toString()].infoWindow.open($scope.map,
-                            $scope.markers[sensorId.toString()].markerObject);
-
-                    }
-
-                    $scope.markers[sensorId.toString()].data.push(jsonObj);
-                }
-
-            } else {
-                console.log("String : "+ data);
-            }
-
-        });
 
         initMap();
 
@@ -928,23 +847,74 @@ homeapp.controller('homecontroller', function($scope, $http,socket,$localStorage
 
         var counter = 100;
 
-        function loadData(){
-            setInterval(function () {
-                //Iterate over the markers
-                for (var sensorId in $scope.markers) {
-                    if ($scope.markers.hasOwnProperty(sensorId) && $scope.markers[sensorId]['data'].length > 0) {
-                        var marker = $scope.markers[sensorId];
-                        //marker.infoWindow.setContent("<b>"+(counter++)+"</b>");
-                        if(marker.data.length > 0){
-                            marker.infoWindow.setContent(generateHtmlContent(marker.data.shift()));
-                        }
-                    }
-                }
+        //Self calling function which will create markers
+        function createMarkers() {
+            //iterate over anamoly array data
+            while($scope.anamolyData.length > 0)   {
 
-            }, 10);
+                data = JSON.stringify($scope.anamolyData.shift());
+                console.log("createMarkers() - "+data);
+
+                if(isJson(data)){
+                    var jsonObj = JSON.parse(data);
+
+                    //TODO Filter out the client's location instead of 'San Francisco'
+                    if(jsonObj.data['city'] == clientCity){
+                        console.log("Data received on channel 'anomalyData'"+jsonObj.data.timestamp);
+
+                        var sensorId = jsonObj['sensorId'];
+                        if(!$scope.markers.hasOwnProperty(sensorId.toString())){
+                            //Create a new marker
+                            $scope.markers[sensorId.toString()] = {
+                                'latitude': jsonObj['data']['latitude'],
+                                'longitude': jsonObj['data']['longitude'],
+                                'markerObject': new google.maps.Marker(
+                                    {
+                                        map: $scope.map,
+                                        position: new google.maps.LatLng(jsonObj['data']['latitude'], jsonObj['data']['longitude'])
+
+                                    }
+                                ),
+                                'infoWindow': new google.maps.InfoWindow({
+                                    content: "",
+                                    maxWidth: 320
+                                }),
+                                'data': [],
+                                'htmlContent': ""
+                            };
+
+                            //Display this marker with its content on the map
+                            $scope.markers[sensorId.toString()].infoWindow.open($scope.map,
+                                $scope.markers[sensorId.toString()].markerObject);
+
+                        }
+
+                        $scope.markers[sensorId.toString()].data.push(jsonObj);
+                    }
+
+                } else {
+                    console.log("String : "+ data);
+                }
+            }
         }
 
-        loadData();
+        function loadMarkers(){
+            //Iterate over the markers
+            for (var sensorId in $scope.markers) {
+                if ($scope.markers.hasOwnProperty(sensorId) && $scope.markers[sensorId]['data'].length > 0) {
+                    var marker = $scope.markers[sensorId];
+                    //marker.infoWindow.setContent("<b>"+(counter++)+"</b>");
+                    if(marker.data.length > 0){
+                        marker.infoWindow.setContent(generateHtmlContent(marker.data.shift()));
+                    }
+                }
+            }
+        }
+
+        $scope.anamolyInterval = setInterval(function(){
+            createMarkers();
+            loadMarkers();
+        }, 10);
 
         function generateHtmlContent(dataJson) {
             var anomalyName = "";

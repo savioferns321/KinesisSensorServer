@@ -4,5 +4,10 @@
  */
 
 exports.index = function(req, res){
-  res.render('index', { title: 'Express' });
+    if(req.session.username){
+        res.redirect('/homepage');
+    }
+    else {
+        res.render('index', {title: 'Express'});
+    }
 };
